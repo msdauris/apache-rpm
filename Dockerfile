@@ -20,3 +20,5 @@ RUN yum -y install \
     libxml2-devel
 
 
+#docker build --platform linux/amd64 -t my-centos-image .
+#docker run -it my-centos-image /bin/bash

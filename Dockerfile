@@ -43,5 +43,6 @@ VOLUME [ "/sys/fs/cgroup" ]
 CMD ["/usr/sbin/init"]
 
 
-#docker build --platform linux/amd64 -t my-centos-image .
+#docker build --platform linux/arm64 -t my-centos-image .
 #docker run --privileged -ti -e container=docker -v /sys/fs/cgroup:/sys/fs/cgroup my-centos-image /bin/bash
+#docker run --privileged -ti -e container=docker -v /sys/fs/cgroup:/sys/fs/cgroup my-centos-image /usr/sbin/init

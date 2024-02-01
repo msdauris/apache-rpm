@@ -41,10 +41,17 @@ CMD ["/usr/sbin/init"]
 COPY bash.sh /bash.sh
 RUN chmod +x /bash.sh
 
-
-#docker build --platform linux/arm64 -t my-centos-image .
+##my process##
+#docker build --platform linux/amd64 -t my-centos-image .
 #docker run --privileged -ti my-centos-image /bin/bash
-#docker run --privileged -d -v /sys/fs/cgroup:/sys/fs/cgroup:ro my-centos-image
-#docker exec -it 751fdb9a340b /bash.sh
-#docker exec -it 751fdb9a340b /bin/bash
-#ls /
+#WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+#on local
+#docker cp bash.sh 181ccb6fff6cb037516196e0b938d9c85095755f0704375569c7fd035bd60066:home
+#Successfully copied 3.58kB to 181ccb6fff6cb037516196e0b938d9c85095755f0704375569c7fd035bd60066:home
+#on remote, navigate to home
+#chmod +x bash.sh
+#$bash /home/bash.sh
+#warning: remember to run 'libtool --finish /usr/local/apache2/modules'
+#to verify
+#sudo systemctl start httpd
+#Failed to get D-Bus connection: Operation not permitted

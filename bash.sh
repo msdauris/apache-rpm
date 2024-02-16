@@ -4,8 +4,8 @@
 HTTPD_VERSION="2.4.58"
 
 # Install necessary development tools and dependencies
-$sudo yum groupinstall -y "Development Tools"
-$sudo yum install -y rpm-build wget
+yum groupinstall -y "Development Tools"
+yum install -y rpm-build wget
 
 # Create the rpmbuild directories
 mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}

@@ -1,5 +1,5 @@
 # Start from CentOS base image
-FROM arm64v8/centos:7
+FROM centos:7
 
 # Set environment variable
 ENV container docker

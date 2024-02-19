@@ -25,8 +25,8 @@ RUN yum -y install \
 COPY bash.sh /bash.sh
 RUN chmod +x /bash.sh
 
-##my process##
-#docker build --platform linux/arm64 -t my-centos-image .
+##old process##
+#docker build --platform linux/amd64 -t my-centos-image .
 #docker run --privileged -d -v /sys/fs/cgroup:/sys/fs/cgroup:ro my-centos-image
 #docker exec -it [container-id] /bin/bash
 #test docker systemctl status

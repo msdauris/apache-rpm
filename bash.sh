@@ -1,82 +1,49 @@
 #!/bin/bash
 
-# Specify the version of httpd you want to download
+# Specify the versions
 HTTPD_VERSION="2.4.58"
+APR_VERSION="1.7.4"
+APR_UTIL_VERSION="1.6.3"
 
 # Install necessary development tools and dependencies
 yum groupinstall -y "Development Tools"
-yum install -y rpm-build wget autoconf libtool doxygen openssl-devel libxml2-devel lua-devel openldap-devel
+yum install -y wget rpm-build libuuid-devel autoconf libtool doxygen openssl-devel lua-devel libxml2-devel mailcap apr-util-devel
 
 # Create the rpmbuild directories
 mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
-# Download the source tarball of the specified version of httpd
-wget -P ~/rpmbuild/SOURCES "https://downloads.apache.org/httpd/httpd-$HTTPD_VERSION.tar.gz"
+# Download the APR and HTTPD source tarballs
+for file in "apr-$APR_VERSION.tar.bz2" "apr-util-$APR_UTIL_VERSION.tar.bz2" "httpd-$HTTPD_VERSION.tar.bz2"; do
+    wget -P ~/rpmbuild/SOURCES "https://downloads.apache.org/apr/$file"
+done
 
-# Check if APR and APR-util are installed
-if [ ! -f /usr/lib64/libapr-1.so ] || [ ! -f /usr/lib64/libaprutil-1.so ]; then
-    echo "APR or APR-util not found in /usr/lib64, attempting to build from source."
-    # Download the additional necessary files
-    wget -P ~/rpmbuild/SOURCES "https://downloads.apache.org/apr/apr-1.7.4.tar.gz"
-    wget -P ~/rpmbuild/SOURCES "https://downloads.apache.org/apr/apr-util-1.6.3.tar.gz"
+# Build APR from source
+echo "Building APR..."
+rpmbuild -tb --clean ~/rpmbuild/SOURCES/apr-$APR_VERSION.tar.bz2 || { echo "APR build failed"; exit 1; }
 
-    # Build and install APR and APR-util from source
-    rpmbuild -tb --clean ~/rpmbuild/SOURCES/apr-1.7.4.tar.gz
-    rpmbuild -tb --clean ~/rpmbuild/SOURCES/apr-util-1.6.3.tar.gz
-
-    # Install the built APR and apr-devel packages
-    rpm -Uvh ~/rpmbuild/RPMS/x86_64/apr-1.7.4-*.x86_64.rpm ~/rpmbuild/RPMS/x86_64/apr-devel-1.7.4-*.x86_64.rpm
-fi
-
-# Download and rebuild distcache (adjust the version as necessary)
-wget https://archive.fedoraproject.org/pub/archive/fedora/linux/releases/18/Everything/source/SRPMS/d/distcache-1.4.5-23.src.rpm -P ~/rpmbuild/SOURCES
-rpmbuild --rebuild --clean ~/rpmbuild/SOURCES/distcache-1.4.5-23.src.rpm
-
-# Install the built distcache and distcache-devel packages
+# Install APR
 cd ~/rpmbuild/RPMS/x86_64
-rpm -Uvh distcache-1.4.5-23.x86_64.rpm distcache-devel-1.4.5-23.x86_64.rpm
+rpm -Uvh apr-$APR_VERSION-1.x86_64.rpm apr-devel-$APR_VERSION-1.x86_64.rpm || { echo "APR installation failed"; exit 1; }
 
-# Create a basic spec file for RPM
-cat <<EOT > ~/rpmbuild/SPECS/httpd.spec
-Name:           httpd
-Version:        $HTTPD_VERSION
-Release:        1%{?dist}
-Summary:        Apache HTTP Server
+# Download and rebuild distcache (optional)
+echo "Downloading and building distcache..."
+wget "https://archive.fedoraproject.org/pub/archive/fedora/linux/releases/18/Everything/source/SRPMS/d/distcache-1.4.5-23.src.rpm" -P ~/rpmbuild/SOURCES
+rpmbuild --rebuild --clean ~/rpmbuild/SOURCES/distcache-1.4.5-23.src.rpm || { echo "Distcache build failed"; exit 1; }
 
-License:        ASL 2.0
-URL:            https://httpd.apache.org/
-Source0:        https://downloads.apache.org/httpd/httpd-%{version}.tar.gz
+# Install the built distcache packages (optional)
+cd ~/rpmbuild/RPMS/x86_64
+rpm -Uvh distcache-1.4.5-23.x86_64.rpm distcache-devel-1.4.5-23.x86_64.rpm || { echo "Distcache installation failed"; exit 1; }
 
-BuildRequires:  gcc, make, pcre-devel, expat-devel, libxml2-devel, openssl-devel, openldap-devel, lua-devel, apr-devel, apr-util-devel
+# Build Apache HTTPD from source
+echo "Building Apache HTTPD..."
+rpmbuild -tb --clean ~/rpmbuild/SOURCES/httpd-$HTTPD_VERSION.tar.bz2 || { echo "HTTPD build failed"; exit 1; }
 
-%description
-The Apache HTTP Server, a robust, commercial-grade, featureful, and freely-available source code implementation of an HTTP (Web) server.
-
-%prep
-%setup -q -n httpd-%{version}
-
-%build
-./configure --prefix=/usr/local/apache2 \
-            --with-included-apr \
-            --enable-ssl \
-            --enable-so \
-            --enable-authnz-ldap \
-            --enable-lua \
-            --enable-proxy-html
-make %{?_smp_mflags}
-
-%install
-make install DESTDIR=%{buildroot}
-
-%files
-/usr/local/apache2
-
-%changelog
-* Mon Feb 19 2024 Emma Dauris <emma.dauris@netcentric.biz> - %{version}-1
-- First build
-EOT
+# Install Apache HTTPD
+cd ~/rpmbuild/RPMS/x86_64
+rpm -Uvh httpd-$HTTPD_VERSION-1.x86_64.rpm httpd-devel-$HTTPD_VERSION-1.x86_64.rpm || { echo "HTTPD installation failed"; exit 1; }
 
 # Build the RPM
-rpmbuild -ba ~/rpmbuild/SPECS/httpd.spec
+echo "Building RPM package..."
+rpmbuild -ba ~/rpmbuild/SPECS/httpd.spec || { echo "RPM package build failed"; exit 1; }
 
 echo "RPM Build Complete. Check ~/rpmbuild/RPMS/ for the RPM file."

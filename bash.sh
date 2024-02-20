@@ -7,7 +7,7 @@ APR_UTIL_VERSION="1.6.3"
 
 # Install necessary development tools and dependencies
 yum groupinstall -y "Development Tools"
-yum install -y wget rpm-build libuuid-devel autoconf libtool doxygen openssl-devel lua-devel libxml2-devel mailcap apr-util-devel
+yum install -y wget rpm-build libuuid-devel autoconf libtool doxygen openssl-devel lua-devel libxml2-devel mailcap apr-devel apr-util-devel
 
 # Create the rpmbuild directories
 mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
@@ -42,8 +42,52 @@ rpmbuild -tb --clean ~/rpmbuild/SOURCES/httpd-$HTTPD_VERSION.tar.bz2 || { echo "
 cd ~/rpmbuild/RPMS/x86_64
 rpm -Uvh httpd-$HTTPD_VERSION-1.x86_64.rpm httpd-devel-$HTTPD_VERSION-1.x86_64.rpm || { echo "HTTPD installation failed"; exit 1; }
 
+# Create a spec file for httpd
+cat <<EOT > ~/rpmbuild/SPECS/httpd.spec
+Name:           httpd
+Version:        $HTTPD_VERSION
+Release:        1%{?dist}
+Summary:        Apache HTTP Server
+
+License:        ASL 2.0
+URL:            https://httpd.apache.org/
+Source0:        https://downloads.apache.org/httpd/httpd-$HTTPD_VERSION.tar.bz2
+Source1:        https://downloads.apache.org/apr/apr-$APR_VERSION.tar.bz2
+Source2:        https://downloads.apache.org/apr/apr-util-$APR_UTIL_VERSION.tar.bz2
+
+BuildRequires:  gcc, make, pcre-devel, expat-devel, libxml2-devel, openssl-devel, openldap-devel, lua-devel, apr-devel, apr-util-devel
+
+%description
+Apache HTTP Server, a robust, commercial-grade, featureful, and freely-available source code implementation of an HTTP (Web) server.
+
+%prep
+%setup -q -n httpd-%{version}
+tar xzf %{SOURCE1} -C srclib/
+tar xzf %{SOURCE2} -C srclib/
+mv srclib/apr-$APR_VERSION srclib/apr
+mv srclib/apr-util-$APR_UTIL_VERSION srclib/apr-util
+
+%build
+./configure --prefix=/usr/local/apache2 \
+            --enable-ssl \
+            --enable-so \
+            --enable-authnz-ldap \
+            --enable-lua \
+            --enable-proxy-html
+make %{?_smp_mflags}
+
+%install
+make install DESTDIR=%{buildroot}
+
+%files
+/usr/local/apache2
+
+%changelog
+* Mon Feb 19 2024 Emma Dauris <emma.dauris@netcentric.biz> - %{version}-1
+- First build
+EOT
+
 # Build the RPM
-echo "Building RPM package..."
-rpmbuild -ba ~/rpmbuild/SPECS/httpd.spec || { echo "RPM package build failed"; exit 1; }
+rpmbuild -ba ~/rpmbuild/SPECS/httpd.spec
 
 echo "RPM Build Complete. Check ~/rpmbuild/RPMS/ for the RPM file."

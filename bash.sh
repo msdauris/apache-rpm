@@ -17,39 +17,31 @@ for file in "apr-$APR_VERSION.tar.bz2" "apr-util-$APR_UTIL_VERSION.tar.bz2"; do
     wget -P ~/rpmbuild/SOURCES "https://downloads.apache.org/apr/$file"
 done
 
-# Download the HTTPD source tarball
+# Build APR from source
+echo "Building APR..."
+rpmbuild -tb --clean ~/rpmbuild/SOURCES/apr-$APR_VERSION.tar.bz2 || { echo "APR build failed"; exit 1; }
+
+# Install the built APR packages
+cd ~/rpmbuild/RPMS/x86_64
+rpm -Uvh apr-$APR_VERSION-1.x86_64.rpm apr-devel-$APR_VERSION-1.x86_64.rpm || { echo "APR installation failed"; exit 1; }
+
+# Build APR-Util from source
+echo "Building APR-Util..."
+rpmbuild -tb --clean ~/rpmbuild/SOURCES/apr-util-$APR_UTIL_VERSION.tar.bz2 || { echo "APR-Util build failed"; exit 1; }
+
+# Install the built APR-Util packages
+cd ~/rpmbuild/RPMS/x86_64
+rpm -Uvh apr-util-$APR_UTIL_VERSION-1.x86_64.rpm apr-util-devel-$APR_UTIL_VERSION-1.x86_64.rpm || { echo "APR-Util installation failed"; exit 1; }
+
+# Download Apache HTTPD source tarball
 wget -P ~/rpmbuild/SOURCES "https://downloads.apache.org/httpd/httpd-$HTTPD_VERSION.tar.bz2"
 
 # Navigate to the SOURCES directory
 cd ~/rpmbuild/SOURCES
 
-# Build APR from source
-echo "Building APR..."
-rpmbuild -tb --clean apr-1.7.4.tar.bz2 || { echo "APR build failed"; exit 1; }
-
-# Navigate to the RPMs directory
-cd ~/rpmbuild/RPMS/x86_64
-
-# Check for and install the RPMs
-if [ -f "apr-1.7.4-1.x86_64.rpm" ] && [ -f "apr-devel-1.7.4-1.x86_64.rpm" ]; then
-    rpm -Uvh apr-1.7.4-1.x86_64.rpm apr-devel-1.7.4-1.x86_64.rpm || { echo "APR installation failed"; exit 1; }
-else
-    echo "APR RPM files not found. Installation failed."
-    exit 1
-fi
-
-# Download and rebuild distcache (optional)
-echo "Downloading and building distcache..."
-wget "https://archive.fedoraproject.org/pub/archive/fedora/linux/releases/18/Everything/source/SRPMS/d/distcache-1.4.5-23.src.rpm" -P ~/rpmbuild/SOURCES
-rpmbuild --rebuild --clean ~/rpmbuild/SOURCES/distcache-1.4.5-23.src.rpm || { echo "Distcache build failed"; exit 1; }
-
-# Install the built distcache packages (optional)
-cd ~/rpmbuild/RPMS/x86_64
-rpm -Uvh distcache-1.4.5-23.x86_64.rpm distcache-devel-1.4.5-23.x86_64.rpm || { echo "Distcache installation failed"; exit 1; }
-
 # Build Apache HTTPD from source
 echo "Building Apache HTTPD..."
-rpmbuild -tb --clean ~/rpmbuild/SOURCES/httpd-$HTTPD_VERSION.tar.bz2 || { echo "HTTPD build failed"; exit 1; }
+rpmbuild -tb --clean httpd-$HTTPD_VERSION.tar.bz2 || { echo "HTTPD build failed"; exit 1; }
 
 # Install Apache HTTPD
 cd ~/rpmbuild/RPMS/x86_64
@@ -64,7 +56,7 @@ Summary:        Apache HTTP Server
 
 License:        ASL 2.0
 URL:            https://httpd.apache.org/
-Source0:        https://downloads.apache.org/httpd/httpd-2.4.58.tar.bz2
+Source0:        https://downloads.apache.org/httpd/httpd-$HTTPD_VERSION.tar.bz2
 Source1:        https://downloads.apache.org/apr/apr-$APR_VERSION.tar.bz2
 Source2:        https://downloads.apache.org/apr/apr-util-$APR_UTIL_VERSION.tar.bz2
 
@@ -102,7 +94,7 @@ make install DESTDIR=%{buildroot}
 - First build
 EOT
 
-# Build the RPM
-rpmbuild -ba ~/rpmbuild/SPECS/httpd.spec
+# Build the RPM for Apache HTTPD
+rpmbuild -ba ~/rpmbuild/SPECS/httpd.spec || { echo "RPM build for HTTPD failed"; exit 1; }
 
-echo "RPM Build Complete. Check ~/rpmbuild/RPMS/ for the RPM file."
+echo "RPM Build Complete. Check ~/rpmbuild/RPMS/ for the RPM files."

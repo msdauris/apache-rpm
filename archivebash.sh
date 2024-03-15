@@ -102,4 +102,7 @@ make install DESTDIR=%{buildroot}
 - First build
 EOT
 
+# Build the RPM
+rpmbuild -ba ~/rpmbuild/SPECS/httpd.spec
+
 echo "RPM Build Complete. Check ~/rpmbuild/RPMS/ for the RPM file."

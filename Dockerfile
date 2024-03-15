@@ -12,19 +12,23 @@ RUN yum -y install \
     wget \
     gcc \
     make \
+    pcre-devel \
+    expat-devel \
+    apr-devel \
     rpm-build \
     autoconf \
     libtool \
     doxygen \
     apr-util-devel \
     openssl-devel \
+    openldap-devel \
     libuuid-devel \
     lua-devel \
     libxml2-devel
 
 COPY bash.sh /bash.sh
 RUN chmod +x /bash.sh
-RUN /bash.sh
+CMD ["/bin/bash", "/bash.sh"] # Run the script when the container starts
 
 ##new process##
 #docker build --platform linux/amd64 -t my-centos-image .
